@@ -185,7 +185,7 @@ def main(argv: List[str] | None = None) -> int:
 	parser = argparse.ArgumentParser(description="Convert JSON to CSV (flattens nested fields)")
 	script_dir = os.path.dirname(os.path.abspath(__file__))
 	default_input = os.path.abspath(os.path.join(script_dir, "..", "raw", "course_extractions_20.json"))
-	default_output = os.path.abspath(os.path.join(script_dir, "..", "processed", "NPTEL.csv"))
+	default_output = os.path.abspath(os.path.join(script_dir, "..", "raw", "NPTEL.csv"))
 
 	parser.add_argument("-i", "--input", default=default_input, help=f"Input JSON file (default: {default_input})")
 	parser.add_argument("-o", "--output", default=default_output, help=f"Output CSV file (default: {default_output})")
