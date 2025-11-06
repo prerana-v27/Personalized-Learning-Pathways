@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-11-06T19:37:54.164786",
+  "script_version": "1.0",
+  "rows_before": 11956,
+  "rows_after": 9657,
+  "dupes_dropped": 2299,
+  "non_null_counts": {
+    "source": 0,
+    "title": 9657,
+    "university": 5990,
+    "difficulty": 9657,
+    "subject": 9657,
+    "price": 3357,
+    "is_paid": 3667,
+    "rating": 7001,
+    "skills": 9657,
+    "description": 9657,
+    "url": 7788,
+    "popularity": 3667,
+    "num_lectures": 3667
+  },
+  "class_balance": {
+    "difficulty_dist": {
+      "Unknown": 4001,
+      "Beginner": 3089,
+      "Intermediate": 1443,
+      "Advanced": 1124
+    },
+    "subject_top20": {
+      "general": 4650,
+      "web development": 1254,
+      "business finance": 1195,
+      "musical instruments": 677,
+      "graphic design": 600,
+      "business": 490,
+      "programming": 287,
+      "data science": 203,
+      "machine learning": 150,
+      "cloud": 82,
+      "database": 51,
+      "devops": 18
+    }
+  },
+  "numeric_summary": {
+    "price": {
+      "count": 3357,
+      "mean": 72.21328567173072,
+      "median": 50.0,
+      "min": 20.0,
+      "max": 200.0
+    },
+    "rating": {
+      "count": 7001,
+      "mean": 84.32053992286816,
+      "median": 4.8,
+      "min": 0.0,
+      "max": 27445.0
+    },
+    "popularity": {
+      "count": 3667,
+      "mean": 3187.2069811835286,
+      "median": 912.0,
+      "min": 0.0,
+      "max": 268923.0
+    },
+    "num_lectures": {
+      "count": 3667,
+      "mean": 40.12244341423507,
+      "median": 25.0,
+      "min": 0.0,
+      "max": 779.0
+    }
+  }
+}

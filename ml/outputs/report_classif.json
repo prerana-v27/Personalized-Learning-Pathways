@@ -1,0 +1,57 @@
+{
+  "task": "classification_hashed_text",
+  "accuracy": 0.6810193321616872,
+  "macro_f1": 0.625625455444934,
+  "classification_report": {
+    "Advanced": {
+      "precision": 0.5260869565217391,
+      "recall": 0.5377777777777778,
+      "f1-score": 0.5318681318681319,
+      "support": 225.0
+    },
+    "Beginner": {
+      "precision": 0.7632776934749621,
+      "recall": 0.8073836276083467,
+      "f1-score": 0.7847113884555382,
+      "support": 623.0
+    },
+    "Intermediate": {
+      "precision": 0.606425702811245,
+      "recall": 0.5206896551724138,
+      "f1-score": 0.5602968460111317,
+      "support": 290.0
+    },
+    "accuracy": 0.6810193321616872,
+    "macro avg": {
+      "precision": 0.6319301176026487,
+      "recall": 0.6219503535195128,
+      "f1-score": 0.625625455444934,
+      "support": 1138.0
+    },
+    "weighted avg": {
+      "precision": 0.6764103884600647,
+      "recall": 0.6810193321616872,
+      "f1-score": 0.6775321704932848,
+      "support": 1138.0
+    }
+  },
+  "class_labels": [
+    "Advanced",
+    "Beginner",
+    "Intermediate"
+  ],
+  "support_per_class": {
+    "Advanced": 225,
+    "Beginner": 623,
+    "Intermediate": 290
+  },
+  "per_class_accuracy": {
+    "Advanced": 0.5377777777777778,
+    "Beginner": 0.8073836276083467,
+    "Intermediate": 0.5206896551724138
+  },
+  "confusion_matrix_shape": [
+    3,
+    3
+  ]
+}
