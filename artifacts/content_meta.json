@@ -1,0 +1,18 @@
+{
+  "columns": [
+    "title",
+    "description",
+    "skills",
+    "subject"
+  ],
+  "tfidf_params": {
+    "max_features": 5000,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "stop_words": "english",
+    "norm": "l2"
+  },
+  "n_items": 2430
+}
