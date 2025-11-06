@@ -1,0 +1,13 @@
+# Ignore ML artifacts created by ml/train.py
+/ml/model.pkl
+/ml/*.pkl
+/ml/__pycache__/
+/ml/venv/
+/ml/.env
+/ml/*.log
+# ML workspace
+ml/data/*
+!ml/data/README.md
+ml/outputs/*
+*.pkl
+*.joblib
