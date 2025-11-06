@@ -11,3 +11,10 @@ ml/data/*
 ml/outputs/*
 *.pkl
 *.joblib
+
+# Python & environment
+__pycache__/
+.venv/
+
+# Streamlit
+.streamlit/
