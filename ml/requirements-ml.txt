@@ -1,0 +1,9 @@
+pandas
+scikit-learn
+numpy
+joblib
+sentence-transformers  # optional but recommended for good embeddings
+# Optional for better recommender performance / speed:
+# faiss-cpu
+# lightgbm
+# imbalanced-learn

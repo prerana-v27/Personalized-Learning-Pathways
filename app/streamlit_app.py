@@ -90,11 +90,13 @@ sys.modules['main'].ContentRecommender = ContentRecommender
 sys.modules['main'].ClusterRecommender = ClusterRecommender
 
 # ========================================
-# Configuration
+# Configuration (paths resolved relative to repo root)
 # ========================================
 
-ARTIFACTS_DIR = Path("artifacts")
-DATA_DIR = Path("Data/processed")
+# Resolve repository root (one level above `app/`)
+ROOT_DIR = Path(__file__).resolve().parents[1]
+ARTIFACTS_DIR = ROOT_DIR / "artifacts"
+DATA_DIR = ROOT_DIR / "Data" / "processed"
 
 CATALOG_PATH = DATA_DIR / "all_courses_cleaned.csv"
 INTERACTIONS_PATH = DATA_DIR / "interactions_synth.csv"
@@ -166,6 +168,16 @@ def load_interactions() -> Optional[pd.DataFrame]:
         return None
 
 
+def _safe_text(val) -> str:
+    """Return a safe string for display. Handles NaN/None gracefully."""
+    try:
+        if pd.isna(val):
+            return ""
+    except Exception:
+        pass
+    return "" if val is None else str(val)
+
+
 @st.cache_resource
 def load_artifacts() -> Dict:
     """Load all model artifacts with caching."""
@@ -230,7 +242,70 @@ def load_artifacts() -> Dict:
     if errors:
         for error in errors:
             st.error(error)
-    
+
+    # --- Fallback: try to load recommender index from ml/outputs if TF-IDF/X_items missing ---
+    try:
+        need_tfidf = 'tfidf' not in artifacts
+        need_xitems = 'X_items' not in artifacts
+        if need_tfidf or need_xitems:
+            fallback_path = ROOT_DIR / 'ml' / 'outputs' / 'recommender_index.joblib'
+            if fallback_path.exists():
+                try:
+                    idx_data = joblib.load(fallback_path)
+                    method = idx_data.get('method', '')
+                    emb = idx_data.get('embeddings')
+                    df_idx = idx_data.get('df')
+
+                    # Build X_items from embeddings (convert to CSR and normalize)
+                    if emb is not None and (need_xitems or 'X_items' not in artifacts):
+                        try:
+                            from scipy.sparse import csr_matrix
+                            from sklearn.preprocessing import normalize
+                            X_items = csr_matrix(emb) if not isinstance(emb, csr_matrix) else emb
+                            X_items = normalize(X_items, norm='l2', axis=1, copy=False)
+                            artifacts['X_items'] = X_items
+                        except Exception:
+                            artifacts['X_items'] = None
+
+                    # Build a TF-IDF vectorizer from the catalog or saved df in index
+                    if need_tfidf:
+                        try:
+                            # Prefer the project's cleaned catalog if available
+                            if CATALOG_PATH.exists():
+                                catalog_df = pd.read_csv(CATALOG_PATH)
+                            elif df_idx is not None:
+                                catalog_df = df_idx
+                            else:
+                                catalog_df = None
+
+                            if catalog_df is not None:
+                                # Prepare text: title + subject + description + skills
+                                text_cols = []
+                                for c in ('title', 'course_title', 'course_name'):
+                                    if c in catalog_df.columns:
+                                        text_cols.append(c)
+                                        break
+                                for c in ('subject', 'skills', 'description'):
+                                    if c in catalog_df.columns:
+                                        text_cols.append(c)
+
+                                if text_cols:
+                                    texts = catalog_df[text_cols].fillna('').astype(str).agg(' '.join, axis=1).tolist()
+                                else:
+                                    texts = catalog_df.fillna('').astype(str).agg(' '.join, axis=1).tolist()
+
+                                from sklearn.feature_extraction.text import TfidfVectorizer
+                                tfidf = TfidfVectorizer(max_features=8192, ngram_range=(1,2))
+                                tfidf.fit(texts)
+                                artifacts['tfidf'] = tfidf
+                        except Exception:
+                            artifacts['tfidf'] = None
+                except Exception:
+                    # ignore fallback load errors
+                    pass
+    except Exception:
+        pass
+
     return artifacts
 
 
@@ -334,17 +409,21 @@ def recommend_content(query_text: str, subjects: List[str], difficulties: List[s
     for rank, idx in enumerate(top_indices, 1):
         if idx >= len(catalog):
             continue
-        
+
         course = catalog.iloc[idx]
+        url = _safe_text(course.get('url', ''))
+        desc = _safe_text(course.get('description', ''))
+        short_desc = (desc[:200] + '...') if len(desc) > 200 else desc
+
         results.append({
             'Rank': rank,
-            'course_id': course.get('course_id', f'c{idx}'),
-            'Title': course.get('title', 'N/A'),
-            'Subject': course.get('subject', 'N/A'),
-            'Difficulty': course.get('difficulty', 'N/A'),
-            'Score': float(scores[idx]),
-            'URL': course.get('url', ''),
-            'Description': course.get('description', '')[:200] + '...' if len(course.get('description', '')) > 200 else course.get('description', ''),
+            'course_id': _safe_text(course.get('course_id', f'c{idx}')),
+            'Title': _safe_text(course.get('title', 'N/A')),
+            'Subject': _safe_text(course.get('subject', 'N/A')),
+            'Difficulty': _safe_text(course.get('difficulty', 'N/A')),
+            'Score': float(scores[idx]) if scores is not None else 0.0,
+            'URL': url,
+            'Description': short_desc,
             'item_idx': idx
         })
     
@@ -439,17 +518,20 @@ def recommend_hybrid_warm(user_id: str, top_k: int, artifacts: Dict,
         item_idx = candidate_items[idx]
         if item_idx >= len(catalog):
             continue
-        
         course = catalog.iloc[item_idx]
+        url = _safe_text(course.get('url', ''))
+        desc = _safe_text(course.get('description', ''))
+        short_desc = (desc[:200] + '...') if len(desc) > 200 else desc
+
         results.append({
             'Rank': rank,
-            'course_id': course.get('course_id', f'c{item_idx}'),
-            'Title': course.get('title', 'N/A'),
-            'Subject': course.get('subject', 'N/A'),
-            'Difficulty': course.get('difficulty', 'N/A'),
-            'Score': float(scores[idx]),
-            'URL': course.get('url', ''),
-            'Description': course.get('description', '')[:200] + '...' if len(course.get('description', '')) > 200 else course.get('description', ''),
+            'course_id': _safe_text(course.get('course_id', f'c{item_idx}')),
+            'Title': _safe_text(course.get('title', 'N/A')),
+            'Subject': _safe_text(course.get('subject', 'N/A')),
+            'Difficulty': _safe_text(course.get('difficulty', 'N/A')),
+            'Score': float(scores[idx]) if scores is not None else 0.0,
+            'URL': url,
+            'Description': short_desc,
             'item_idx': item_idx
         })
     
@@ -542,19 +624,22 @@ def recommend_hybrid_cold(query_text: str, subjects: List[str], difficulties: Li
     for rank, idx in enumerate(top_indices, 1):
         if idx >= len(catalog):
             continue
-        
         course = catalog.iloc[idx]
+        url = _safe_text(course.get('url', ''))
+        desc = _safe_text(course.get('description', ''))
+        short_desc = (desc[:200] + '...') if len(desc) > 200 else desc
+
         results.append({
             'Rank': rank,
-            'course_id': course.get('course_id', f'c{idx}'),
-            'Title': course.get('title', 'N/A'),
-            'Subject': course.get('subject', 'N/A'),
-            'Difficulty': course.get('difficulty', 'N/A'),
-            'Score': float(final_scores[idx]),
-            'Content Score': float(content_scores[idx]),
-            'Popularity Score': float(pop_scores[idx]),
-            'URL': course.get('url', ''),
-            'Description': course.get('description', '')[:200] + '...' if len(course.get('description', '')) > 200 else course.get('description', ''),
+            'course_id': _safe_text(course.get('course_id', f'c{idx}')),
+            'Title': _safe_text(course.get('title', 'N/A')),
+            'Subject': _safe_text(course.get('subject', 'N/A')),
+            'Difficulty': _safe_text(course.get('difficulty', 'N/A')),
+            'Score': float(final_scores[idx]) if final_scores is not None else 0.0,
+            'Content Score': float(content_scores[idx]) if content_scores is not None else 0.0,
+            'Popularity Score': float(pop_scores[idx]) if pop_scores is not None else 0.0,
+            'URL': url,
+            'Description': short_desc,
             'item_idx': idx
         })
     
@@ -579,17 +664,19 @@ def render_results(results: pd.DataFrame, model_type: str):
         
         with col1:
             # Title with link
-            if row.get('URL') and row['URL'].strip():
-                st.markdown(f"**{row['Rank']}. [{row['Title']}]({row['URL']})**")
+            url = _safe_text(row.get('URL', ''))
+            if url and url.strip():
+                st.markdown(f"**{row['Rank']}. [{_safe_text(row.get('Title',''))}]({url})**")
             else:
-                st.markdown(f"**{row['Rank']}. {row['Title']}**")
-            
+                st.markdown(f"**{row['Rank']}. {_safe_text(row.get('Title',''))}**")
+
             # Metadata
-            st.caption(f"📚 {row['Subject']} | 📊 {row['Difficulty']}")
-            
+            st.caption(f"📚 {_safe_text(row.get('Subject',''))} | 📊 {_safe_text(row.get('Difficulty',''))}")
+
             # Description
-            if row.get('Description'):
-                st.text(row['Description'])
+            desc = _safe_text(row.get('Description', ''))
+            if desc:
+                st.text(desc)
         
         with col2:
             st.metric("Score", f"{row['Score']:.3f}")
@@ -702,14 +789,6 @@ def main():
             for model_name, weight in weights.items():
                 if weight > 0:
                     st.caption(f"- {model_name.capitalize()}: {float(weight):.2f}")
-            
-            # Show metrics if available
-            metrics = hybrid_config.get('metrics', {}).get('overall', {})
-            if metrics:
-                st.divider()
-                st.caption("**Model Performance:**")
-                st.caption(f"Recall@10: {metrics.get('recall', 0):.1%}")
-                st.caption(f"NDCG@10: {metrics.get('ndcg', 0):.3f}")
     
     # Main panel
     if model_type == "Hybrid" and has_hybrid:
@@ -768,7 +847,7 @@ def main():
                 subjects = catalog['subject'].unique()
                 subjects = [s for s in subjects if s and s != 'N/A']
                 selected_subjects = st.multiselect(
-                    "Subject (optional)",
+                    "Subject ",
                     sorted(subjects),
                     help="Filter by subject area"
                 )
@@ -778,7 +857,7 @@ def main():
                 difficulties = catalog['difficulty'].unique()
                 difficulties = [d for d in difficulties if d and d != 'N/A']
                 selected_difficulties = st.multiselect(
-                    "Difficulty (optional)",
+                    "Difficulty",
                     sorted(difficulties),
                     help="Filter by difficulty level"
                 )
@@ -886,7 +965,7 @@ def main():
     
     # Footer
     st.divider()
-    st.caption("💡 Powered by TF-IDF, NMF, and Hybrid Ensemble Learning")
+    st.caption("💡 AI-Powered Course Recommendations")
 
 
 if __name__ == "__main__":
