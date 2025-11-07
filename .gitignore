@@ -1,0 +1,18 @@
+# Ignore large generated model and artifact files
+ml/outputs/*.joblib
+ml/outputs/*.npz
+ml/outputs/*.pkl
+artifacts/*
+artifacts/**
+Data/processed/*.npz
+
+# Python cache
+__pycache__/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual env
+venv/
+env/
