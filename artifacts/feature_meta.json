@@ -1,0 +1,38 @@
+{
+  "feature_order": [
+    "user_profile",
+    "item_vector",
+    "item_popularity_z",
+    "item_recency_days (negative)",
+    "user_mean_rating",
+    "item_mean_rating",
+    "content_cosine"
+  ],
+  "feature_dims": {
+    "user_profile_dim": 5000,
+    "item_vector_dim": 5000,
+    "scalar_features_dim": 5
+  },
+  "scaler_mean": [
+    0.22061427653144455,
+    -119.52786115279862,
+    1.0,
+    1.0,
+    0.1335072060697767
+  ],
+  "scaler_scale": [
+    1.4101415539976159,
+    92.88510617099013,
+    1.0,
+    1.0,
+    0.18444938715278109
+  ],
+  "model_type": "SGDClassifier",
+  "model_params": {
+    "loss": "log_loss",
+    "alpha": 0.0001,
+    "max_iter": 1000,
+    "class_weight": "balanced",
+    "random_state": 42
+  }
+}
