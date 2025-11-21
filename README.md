@@ -185,7 +185,7 @@ We welcome contributions — please open issues or pull requests. See `CONTRIBUT
 
 ## 📬 Contact
 
-- Project Lead: Prerana Vedavati
+- Project Lead: Prerana V
 - Repository: https://github.com/prerana-v27/Personalized-Learning-Pathways
 
 ## 🙏 Acknowledgments
